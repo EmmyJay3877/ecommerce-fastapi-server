@@ -100,7 +100,7 @@ def upload_itemImage(id: int, image: UploadFile = File(...), db: Session = Depen
         
         def delete_item_without_image():
             token = oauth2.create_access_token(data={"admin_id": admin.id})
-            url = f'http://localhost:8000/items/{item.id}'
+            url = f'https://ecommerce-fastapi-server.onrender.com/items/{item.id}'
             headers = {"Authorization": f"Bearer {token}"}
             data = {'id': item.id}
             response = requests.delete(url, data=data, headers=headers)

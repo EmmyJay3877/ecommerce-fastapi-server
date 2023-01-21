@@ -85,7 +85,7 @@ def update_orderitem_quantity(id: int, q: int, db: Session = Depends(get_db), cu
     def get_all_orders():
         token = oauth2.create_access_token(data = {"customer_id": current_customer.id})
         headers = {"Authorization": f"Bearer {token}"}
-        response = requests.get("http://localhost:8000/orders/", headers=headers)
+        response = requests.get("https://ecommerce-fastapi-server.onrender.com/orders/", headers=headers)
         return response.json()
 
     all_orders = get_all_orders()
