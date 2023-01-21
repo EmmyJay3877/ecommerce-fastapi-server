@@ -5,9 +5,16 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import time
 from .config import settings
+import os
+
+DATABASE_USERNAME = os.environ.get("DATABASE_USERNAME")
+DATABASE_PASSWORD = os.environ.get("DATABASE_PASSWORD")
+DATABASE_HOSTNAME = os.environ.get("DATABASE_HOSTNAME")
+DATABASE_PORT = os.environ.get("DATABASE_PORT")
+DATABASE_NAME = os.environ.get("DATABASE_NAME")
 
 # locating our postgres database, using the connection string
-SQLALCHEMY_DATABASE_URL = f'postgresql://{settings.database_username}:{settings.database_password}@{settings.database_hostname}:{settings.database_port}/{settings.database_name}' #format for the connection sring
+SQLALCHEMY_DATABASE_URL = f'postgresql://{DATABASE_USERNAME}:{DATABASE_PASSWORD}@{DATABASE_HOSTNAME}:{DATABASE_PORT}/{DATABASE_NAME}' #format for the connection sring
 
 
 # create engine, its respnsible for the connection of sqlalchemy to postgres

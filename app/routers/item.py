@@ -8,15 +8,21 @@ import cloudinary
 import cloudinary.uploader
 import requests
 from ..config import settings
+import os
 
 router = APIRouter(prefix="/items", tags=['Items'])
 
+CLOUD_NAME = os.environ.get("CLOUD_NAME")
+API_KEY = os.environ.get("API_KEY")
+API_SECRET = os.environ.get("API_SECRET")
+SECURE = os.environ.get("SECURE")
+
 # remember to save this as secrets on the backend before deployment
 cloudinary.config( 
-  cloud_name = settings.cloud_name, 
-  api_key = settings.api_key, 
-  api_secret = settings.api_secret,
-  secure = settings.secure
+  cloud_name = CLOUD_NAME, 
+  api_key = API_KEY, 
+  api_secret = API_SECRET,
+  secure = SECURE
 )
 
 # getting all items
