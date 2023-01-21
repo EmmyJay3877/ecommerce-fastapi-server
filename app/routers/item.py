@@ -82,8 +82,6 @@ def upload_itemImage(id: int, image: UploadFile = File(...), db: Session = Depen
         detail="Error")
 
 
-    print(item.name)
-
     try:
         delete = cloudinary.uploader.destroy(item.name)
         data = cloudinary.uploader.upload(image.file, public_id=item.name)
