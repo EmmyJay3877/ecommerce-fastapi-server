@@ -81,6 +81,9 @@ def upload_itemImage(id: int, image: UploadFile = File(...), db: Session = Depen
         raise HTTPException(status_code= status.HTTP_403_FORBIDDEN,
         detail="Error")
 
+
+    print(item.name)
+
     try:
         delete = cloudinary.uploader.destroy(item.name)
         data = cloudinary.uploader.upload(image.file, public_id=item.name)
