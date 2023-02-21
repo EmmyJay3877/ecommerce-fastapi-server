@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     api_key: int 
     api_secret: str 
     secure: bool 
+    STRIPE_SECRET_KEY: str
     
     class Config:
         env_file = ".env"

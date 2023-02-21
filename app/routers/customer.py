@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Response, status, HTTPException, Depends, APIRouter, Request, Form
+from starlette.responses import RedirectResponse
 from fastapi.responses import HTMLResponse
 from .. import models, schemas, utils, oauth2, func
 from sqlalchemy.orm import Session
@@ -11,11 +12,104 @@ from jose import JWTError, jwt
 import asyncio
 from datetime import datetime, timedelta
 from pytz import timezone
+import stripe
+import os
 
 router = APIRouter(
     prefix="/customers",
     tags=['Customers'] 
 )
+
+STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY")
+
+# create new stripe checkout
+@router.post("/create-stripe-checkout", status_code=status.HTTP_201_CREATED)
+async def create_stripe_customer(db: Session=Depends(get_db), current_customer: int=Depends(oauth2.get_current_user)):
+
+    customer = db.query(models.Customer).join(models.Profile, 
+    models.Customer.id==models.Profile.customer_id).filter(models.Customer.id==current_customer.id).first()
+
+    if not customer:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"Customer not found")
+
+    orders = db.query(models.Order).filter(models.Order.customer_id==current_customer.id).all()
+
+    if not orders:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+        detail=f"You have no order") 
+
+    stripe.api_key=STRIPE_SECRET_KEY
+
+    try:
+        total_order_item_price = 0
+        stripe_product=[]
+        stripe_price=[]
+        line_items=[]
+        product_index=0
+        for order in orders:
+            order_items = db.query(models.OrderItem).filter(models.OrderItem.order_id==order.id).all()
+            for order_item in order_items:
+                item = db.query(models.Item).filter(models.Item.id==order_item.item_id).first()
+                stripe_product.append(stripe.Product.create(name=item.name, images=[item.image]))
+                stripe_price.append(stripe.Price.create(
+                    unit_amount=int(item.price * 100),
+                    currency="usd",
+                    product=stripe_product[product_index]
+                    ))
+                total_order_item_price += order_item.total_price
+                line_items.append(
+                    {
+                        'price': stripe_price[product_index].id,
+                        'quantity': order_item.quantity
+                    }
+                )
+                product_index+=1
+
+        stripe_customer= stripe.Customer.create(
+            email=customer.email,
+            name=customer.username,
+            phone=customer.profile.phone_number,
+            metadata={"Total price": total_order_item_price}
+        )
+
+        checkout_session= stripe.checkout.Session.create(
+            line_items=line_items,
+            mode='payment',
+            success_url="http://localhost:3000/customer/success",
+            cancel_url="http://localhost:3000/customer/failed"
+        )
+        return checkout_session.url
+    except stripe.error.CardError as e:
+        charge = stripe.Charge.retrieve(e.error.payment_intent.latest_charge)
+        if charge.outcome.type == 'blocked':
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+        detail=f"Payment blocked for suspected fraud")
+        elif e.code == 'card_declined':
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+        detail=f"Payment declined by the issuer.")
+        elif e.code == 'expired_card':
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+        detail=f"Card expired.")
+        else:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+        detail=f"Other Card error.")
+    except stripe.error.APIConnectionError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+        detail=f"Network error, try again.")
+    except stripe.error.APIError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+        detail=f"Stripe is down, try again.")
+    except stripe.error.AuthenticationError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+        detail=f"Authentication error.")
+    except stripe.error.RateLimitError:
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        detail=f"Action Blocked, too many requests.")
+    except stripe.error.PermissionError:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+        detail=f"Access forbidden.")
+    
 
 # create new customer
 @router.post("/", status_code=status.HTTP_201_CREATED)
