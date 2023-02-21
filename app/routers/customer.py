@@ -76,8 +76,8 @@ async def create_stripe_customer(db: Session=Depends(get_db), current_customer: 
         checkout_session= stripe.checkout.Session.create(
             line_items=line_items,
             mode='payment',
-            success_url="http://localhost:3000/customer/success",
-            cancel_url="http://localhost:3000/customer/failed"
+            success_url="https://ecommerce-react-client.netlify.app/customer/success",
+            cancel_url="https://ecommerce-react-client.netlify.app/customer/failed"
         )
         return checkout_session.url
     except stripe.error.CardError as e:
