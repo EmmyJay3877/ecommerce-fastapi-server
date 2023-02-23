@@ -21,8 +21,9 @@ router = APIRouter(
 )
 
 STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY")
+CLIENT = os.environ.get("CLIENT")
 
-# create new stripe checkout
+# create new stripe checkout and stripe customer_id
 @router.post("/create-stripe-checkout", status_code=status.HTTP_201_CREATED)
 async def create_stripe_customer(db: Session=Depends(get_db), current_customer: int=Depends(oauth2.get_current_user)):
 
@@ -48,23 +49,24 @@ async def create_stripe_customer(db: Session=Depends(get_db), current_customer: 
         line_items=[]
         product_index=0
         for order in orders:
-            order_items = db.query(models.OrderItem).filter(models.OrderItem.order_id==order.id).all()
-            for order_item in order_items:
-                item = db.query(models.Item).filter(models.Item.id==order_item.item_id).first()
-                stripe_product.append(stripe.Product.create(name=item.name, images=[item.image]))
-                stripe_price.append(stripe.Price.create(
-                    unit_amount=int(item.price * 100),
-                    currency="usd",
-                    product=stripe_product[product_index]
-                    ))
-                total_order_item_price += order_item.total_price
-                line_items.append(
-                    {
-                        'price': stripe_price[product_index].id,
-                        'quantity': order_item.quantity
-                    }
-                )
-                product_index+=1
+            if order.status not in ["PROCCESSING", "PAID"]:
+                order_items = db.query(models.OrderItem).filter(models.OrderItem.order_id==order.id).all()
+                for order_item in order_items:
+                    item = db.query(models.Item).filter(models.Item.id==order_item.item_id).first()
+                    stripe_product.append(stripe.Product.create(name=item.name, images=[item.image]))
+                    stripe_price.append(stripe.Price.create(
+                        unit_amount=int(item.price * 100),
+                        currency="usd",
+                        product=stripe_product[product_index]
+                        ))
+                    total_order_item_price += order_item.total_price
+                    line_items.append(
+                        {
+                            'price': stripe_price[product_index].id,
+                            'quantity': order_item.quantity
+                        }
+                    )
+                    product_index+=1
 
         stripe_customer= stripe.Customer.create(
             email=customer.email,
@@ -76,9 +78,15 @@ async def create_stripe_customer(db: Session=Depends(get_db), current_customer: 
         checkout_session= stripe.checkout.Session.create(
             line_items=line_items,
             mode='payment',
-            success_url="https://ecommerce-react-client.netlify.app/customer/success",
-            cancel_url="https://ecommerce-react-client.netlify.app/customer/failed"
+            metadata={"customer_id": customer.id},
+            customer=stripe_customer.id,
+            success_url=f"{CLIENT}/customer/success",
+            cancel_url=f"{CLIENT}/customer/failed"
+            # success_url="http://localhost:3000/customer/success",
+            # cancel_url="http://localhost:3000/customer/failed"
         )
+        global cs 
+        cs = checkout_session.id
         return checkout_session.url
     except stripe.error.CardError as e:
         charge = stripe.Charge.retrieve(e.error.payment_intent.latest_charge)
@@ -109,7 +117,43 @@ async def create_stripe_customer(db: Session=Depends(get_db), current_customer: 
     except stripe.error.PermissionError:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
         detail=f"Access forbidden.")
-    
+
+# check stripe payment status & update order status
+@router.post("/check-payment-status", status_code=status.HTTP_200_OK)
+def verify_payment_status(db: Session=Depends(get_db), current_customer: int=Depends(oauth2.get_current_user)):
+
+    customer = db.query(models.Customer).filter(models.Customer.id==current_customer.id).first()
+
+    if not customer:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"Customer not found")
+
+    orders_query = db.query(models.Order).filter(models.Order.customer_id==current_customer.id)
+    orders = orders_query.all()
+
+    if not orders:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"Order not found")
+
+    retrieved_checkout_session = stripe.checkout.Session.retrieve(cs)
+
+    if not retrieved_checkout_session:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"Check out session not found or has expired.")
+
+    # covert them to strs cause current_customer.id is an int
+    if str(current_customer.id) == str(retrieved_checkout_session.metadata.customer_id):
+        if retrieved_checkout_session.status == "complete" and retrieved_checkout_session.payment_status == "paid":
+            orders_query.update({"status": "PAID"}, synchronize_session=False)
+            db.commit()
+        elif retrieved_checkout_session.status == "complete" and retrieved_checkout_session.payment_status == "unpaid":
+            orders_query.update({"status": "PROCCESSING"}, synchronize_session=False)
+            db.commit()
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Your payment has been authorized but not yet captured. Please wait for the payment to be processed and your order will be ready 👍")
+    else:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+        detail=f"Invalid Customer") 
 
 # create new customer
 @router.post("/", status_code=status.HTTP_201_CREATED)

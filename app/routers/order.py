@@ -7,8 +7,11 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from sqlalchemy import func
 from jose import JWTError
+import os
 
 router = APIRouter(prefix="/orders", tags=['Orders'])
+
+SERVER = os.environ.get("SERVER")
 
 # create an order
 @router.post("/{item_id}/{q}", status_code=status.HTTP_201_CREATED, response_model=schemas.OrderOut)
@@ -34,7 +37,7 @@ def create_order(item_id: int, q: int,  order: schemas.OrderCreate, db: Session 
 # getting all orders
 @router.get("/" , response_model=List[schemas.OrderOut])
 def get_orders(db: Session = Depends(get_db), current_customer: int=Depends(oauth2.get_current_user)): 
-    orders = db.query(models.Order).filter(models.Order.customer_id==current_customer.id).all()
+    orders = db.query(models.Order).filter(models.Order.customer_id==current_customer.id, models.Order.status=='PENDING').all()
 
     if not orders:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
@@ -85,7 +88,7 @@ def update_orderitem_quantity(id: int, q: int, db: Session = Depends(get_db), cu
     def get_all_orders():
         token = oauth2.create_access_token(data = {"customer_id": current_customer.id})
         headers = {"Authorization": f"Bearer {token}"}
-        response = requests.get("https://ecommerce-fastapi-server.onrender.com/orders/", headers=headers)
+        response = requests.get(f"{SERVER}/orders/", headers=headers)
         return response.json()
 
     all_orders = get_all_orders()
