@@ -16,7 +16,6 @@ class Settings(BaseSettings):
     api_secret: str 
     secure: bool 
     stripe_secret_key: str
-    local_client: str
     client: str
     
     class Config:
