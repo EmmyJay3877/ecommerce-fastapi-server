@@ -36,6 +36,16 @@ class OrderOut(BaseModel):
     class Config:
         orm_mode = True
 
+class HistoryOut(BaseModel):
+    cu_history: str
+    created_at: str
+
+    class Config:
+        orm_mode = True
+
+class History(BaseModel):
+    data: str 
+
 # schema for profle response
 class Profile(CustomerBase):
     customer_id: int 
@@ -81,6 +91,16 @@ class Response(BaseModel):
 
     class Config:
         orm_mode = True
+
+class _Response(BaseModel):
+    status: str
+    data: str
+    history: str 
+
+    class Config:
+        orm_mode = True
+
+
 class CodeResponse(BaseModel):
     status: str
     data: str

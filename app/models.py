@@ -75,6 +75,7 @@ class Customer(Base):
     server_default=text('now()'))
     orders = relationship("Order", back_populates="customer")
     profile = relationship("Profile", backref="customer", uselist=False)
+    history = relationship("History", backref="customer", uselist=False)
 
 class Profile(Base):
     __tablename__ = "profiles"
@@ -82,4 +83,13 @@ class Profile(Base):
     phone_number = Column(String(20), nullable=False)
     city = Column(String(), nullable=False)
     region = Column(String(), nullable=False)
+
+class History(Base):
+    __tablename__ = "history"
+    id = Column(Integer, primary_key=True, nullable=False)
+    customer_id = Column(Integer, ForeignKey("customers.id", ondelete="CASCADE"))
+    cu_history = Column(String, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, 
+    server_default=text('now()'))
+    
 

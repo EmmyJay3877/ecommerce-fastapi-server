@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 from pytz import timezone
 import stripe
 import os
+from ..config import settings
 
 router = APIRouter(
     prefix="/customers",
@@ -22,6 +23,8 @@ router = APIRouter(
 
 STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY")
 CLIENT = os.environ.get("CLIENT")
+# STRIPE_SECRET_KEY = settings.stripe_secret_key
+# LOCAL_CLIENT = settings.local_client
 
 # create new stripe checkout and stripe customer_id
 @router.post("/create-stripe-checkout", status_code=status.HTTP_201_CREATED)
@@ -82,8 +85,8 @@ async def create_stripe_customer(db: Session=Depends(get_db), current_customer: 
             customer=stripe_customer.id,
             success_url=f"{CLIENT}/customer/success",
             cancel_url=f"{CLIENT}/customer/failed"
-            # success_url="http://localhost:3000/customer/success",
-            # cancel_url="http://localhost:3000/customer/failed"
+            # success_url=f"{LOCAL_CLIENT}/success",
+            # cancel_url=f"{LOCAL_CLIENT}/failed"
         )
         global cs 
         cs = checkout_session.id
@@ -211,7 +214,7 @@ def check_email(email: schemas.EmailCheck, db: Session=Depends(get_db)):
                 }
 
     except:
-        return {"status": "error"}
+        return {"status": "error", "data": "error", "code": "null", "id": "null"}
 
 # delete_code
 @router.put("/delete_code", status_code=status.HTTP_200_OK)
@@ -268,7 +271,7 @@ def check_email(id: schemas.IdCheck, db: Session=Depends(get_db)):
                 }
 
     except:
-        return {"status": "error"}
+        return {"status": "error", "data": "error", "code": "null", "email": "null"}
 
 # verify code
 @router.post('/verify_code', status_code=status.HTTP_200_OK)
@@ -289,7 +292,7 @@ def check_code(code: schemas.CodeCheck, db: Session=Depends(get_db)):
     return {"access_token": access_token, "token_type": "bearer"}
     
 # update password
-@router.put("/update_password", response_model=schemas.Response)
+@router.put("/update_password", response_model=schemas._Response)
 def update_customerPswrd(password: schemas.PasswordEdit, db: Session=Depends(get_db), current_customer: int=Depends(oauth2.get_current_user)):
 
     customer_query = db.query(models.Customer).filter(models.Customer.id==current_customer.id)
@@ -309,10 +312,11 @@ def update_customerPswrd(password: schemas.PasswordEdit, db: Session=Depends(get
         db.commit()
         return {
         "status": "ok",
-        "data": "Password reset successfull"
+        "data": "Password reset successfull",
+        "history": "You updated your password"
     }
     except:
-        return {"status": "error"}
+        return {"status": "error", "data": "error", "history": "error"}
 
 # verify customers token
 @router.get('/check-token', status_code=status.HTTP_200_OK)
@@ -378,6 +382,38 @@ def get_customer( db: Session = Depends(get_db), current_customer: int=Depends(o
 
     return customer
 
+# create customer history
+@router.post('/history', status_code=status.HTTP_201_CREATED)
+def create_history(data: schemas.History, db: Session=Depends(get_db), current_customer: int=Depends(oauth2.get_current_user)):
+
+    customer = db.query(models.Customer).filter(models.Customer.id==current_customer.id).first()
+
+    if not customer:
+        raise HTTPException(status_code= status.HTTP_401_UNAUTHORIZED, 
+        detail= f"Not authorized")
+
+    history = models.History(customer_id=current_customer.id, cu_history=data.data)
+    db.add(history)
+    db.commit()
+    db.refresh(history)
+
+# get all history
+@router.get('/get_history', status_code=status.HTTP_200_OK, response_model=List[schemas.HistoryOut])
+def get_cu_history(db: Session=Depends(get_db), current_customer: int=Depends(oauth2.get_current_user)):
+
+    histories = db.query(models.History).filter(models.History.customer_id==current_customer.id).all()
+
+    if not histories:
+        raise HTTPException(status_code= status.HTTP_404_NOT_FOUND, 
+        detail= f"You have no history")
+
+    _histories=[]
+    for history in histories:
+        formatted_time = func.convert_time(str(history.created_at))
+        _histories.append({"cu_history": history.cu_history, "created_at": formatted_time})
+
+    return _histories
+
 # verify customer
 @router.put("/verify_email", status_code=status.HTTP_200_OK)
 def verify_customer(db: Session=Depends(get_db), current_customer: int=Depends(oauth2.get_current_user)):
@@ -426,7 +462,7 @@ def create_profile(profile: schemas.ProfileCreate, db: Session=Depends(get_db),
     }
 
 # update profile
-@router.put("/profile/update", response_model=schemas.Response)
+@router.put("/profile/update", response_model=schemas._Response)
 def update_profile(updated_profile: schemas.ProfileCreate, db: Session=Depends(get_db),
             current_customer: int=Depends(oauth2.get_current_user)):
     profile_query = db.query(models.Profile).filter(models.Profile.customer_id == current_customer.id)
@@ -446,7 +482,8 @@ def update_profile(updated_profile: schemas.ProfileCreate, db: Session=Depends(g
 
     return {
         "status": "ok",
-        "data": f"Profile updated sucessfully"
+        "data": f"Profile updated sucessfully",
+        "history": "You updated your profile"
     }
 
 # delete a customer

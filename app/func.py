@@ -38,3 +38,23 @@ def generate_code(length):
 
   return code
 
+import datetime
+
+def convert_time(time: datetime):
+  default_time = datetime.datetime.fromisoformat(time)
+  # convert default time to UTC
+  utc_time = default_time.astimezone(datetime.timezone.utc)
+  current_time = datetime.datetime.now(datetime.timezone.utc)
+
+  time_diff = current_time - utc_time
+
+  if time_diff.total_seconds() < 60:
+      return str(int(time_diff.total_seconds())) + "s ago"
+  elif time_diff.total_seconds() < 3600:
+      return str(int(time_diff.total_seconds() / 60)) + "mins ago"
+  elif time_diff.total_seconds() < 86400:
+      return str(int(time_diff.total_seconds() / 3600)) + "hr(s) ago"
+  elif time_diff.days == 1:
+      return "yesterday"
+  else:
+      return str(time_diff.days) + "days ago"

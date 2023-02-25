@@ -14,9 +14,16 @@ DATABASE_HOSTNAME = os.environ.get("DATABASE_HOSTNAME")
 DATABASE_PORT = os.environ.get("DATABASE_PORT")
 DATABASE_NAME = os.environ.get("DATABASE_NAME")
 
+# DATABASE_USERNAME = settings.database_username
+# DATABASE_PASSWORD = settings.database_password
+# DATABASE_HOSTNAME = settings.database_hostname
+# DATABASE_PORT = settings.database_port
+# DATABASE_NAME = settings.database_name
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
+# config.set_main_option('sqlalchemy.url', f'postgresql+psycopg2://postgres:boluwatife@localhost:5432/fastapi_test')
 config.set_main_option('sqlalchemy.url', f'postgresql+psycopg2://{DATABASE_USERNAME}:{DATABASE_PASSWORD}@{DATABASE_HOSTNAME}:{DATABASE_PORT}/{DATABASE_NAME}')
 
 # Interpret the config file for Python logging.

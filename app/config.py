@@ -15,7 +15,9 @@ class Settings(BaseSettings):
     api_key: int 
     api_secret: str 
     secure: bool 
-    STRIPE_SECRET_KEY: str
+    stripe_secret_key: str
+    local_client: str
+    client: str
     
     class Config:
         env_file = ".env"

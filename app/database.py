@@ -13,7 +13,12 @@ DATABASE_HOSTNAME = os.environ.get("DATABASE_HOSTNAME")
 DATABASE_PORT = os.environ.get("DATABASE_PORT")
 DATABASE_NAME = os.environ.get("DATABASE_NAME")
 
-# locating our postgres database, using the connection string
+# DATABASE_USERNAME = settings.database_username
+# DATABASE_PASSWORD = settings.database_password
+# DATABASE_HOSTNAME = settings.database_hostname
+# DATABASE_PORT = settings.database_port
+# DATABASE_NAME = settings.database_name
+
 SQLALCHEMY_DATABASE_URL = f'postgresql://{DATABASE_USERNAME}:{DATABASE_PASSWORD}@{DATABASE_HOSTNAME}:{DATABASE_PORT}/{DATABASE_NAME}' #format for the connection sring
 
 # create engine, its respnsible for the connection of sqlalchemy to postgres
