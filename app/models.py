@@ -91,5 +91,12 @@ class History(Base):
     cu_history = Column(String, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, 
     server_default=text('now()'))
-    
+
+
+class Notificaton(Base):
+    __tablename__ = "notification"
+    id = Column(Integer, primary_key=True, nullable=False)
+    _notification = Column(String, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, 
+    server_default=text('now()'))
 
