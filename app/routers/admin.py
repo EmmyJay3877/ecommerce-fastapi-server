@@ -6,11 +6,47 @@ from uuid import uuid4
 from typing import List
 from datetime import datetime
 from jose import JWTError, jwt
+from ..func import convert_time
 
 router = APIRouter(
     prefix="/admin", # / = /{id}
     tags=['Admin'] # group requests
 )
+
+@router.get("/", status_code=status.HTTP_200_OK)
+def admin_root(db: Session = Depends(get_db), current_admin: int=Depends(oauth2.get_current_user)):
+    _notification_count = db.query(models.New_notification_count).first()
+    return _notification_count
+
+def update_noti_count(db=None):
+    if db is None:
+        print('yes')
+        db=next(get_db())
+        _notification_count_query = db.query(models.New_notification_count).filter(models.New_notification_count.id==1)
+        existing_notification_count_ = _notification_count_query.first()
+        if existing_notification_count_ is None:
+            print('yes1')
+            _new_noti = models.New_notification_count(_new_notification_count=0)
+            db.add(_new_noti)
+            db.commit()
+            db.refresh(_new_noti)
+        else:
+            print('no')
+            new_count = _notification_count_query.first()._new_notification_count
+            new_count+=1
+            _notification_count_query.update({"_new_notification_count":new_count}, synchronize_session=False)
+            db.commit()
+    if db is not None:
+        print('no2')
+        db.close()
+
+    db.close()
+
+@router.get("/notification-reset", status_code=status.HTTP_201_CREATED)
+def reset_noti(db: Session = Depends(get_db), current_admin: int=Depends(oauth2.get_current_user)):
+    _notification_count_query = db.query(models.New_notification_count).filter(models.New_notification_count.id==1)
+    _notification_count_query.update({"_new_notification_count":0}, synchronize_session=False)
+    db.commit()
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.Response)
@@ -41,6 +77,21 @@ def verify_token(token: str = Depends(oauth2.oauth2_scheme)):
 
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token", headers={"WWW-Authenticate": "Bearer"})
+
+# get all notification
+@router.get('/notification', status_code=status.HTTP_200_OK)
+def get_notification(db: Session = Depends(get_db), current_admin: int=Depends(oauth2.get_current_user)):
+    notifications = db.query(models.Notificaton).all()
+    if not notifications:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+        detail=f"There are no orders")
+
+    _notifications=[]
+    for notification in notifications:
+        formatted_time = func.convert_time(str(notification.created_at))
+        _notifications.append({"_notification": notification._notification, "created_at": formatted_time})
+
+    return _notifications
 
 # getting all customer orders
 @router.get("/orders" )

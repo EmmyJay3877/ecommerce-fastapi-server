@@ -22,6 +22,15 @@ def full_order(new_order, order_item, item):
                     "order_date": new_order.order_date
             }
 
+def format_notification(products, prices, _line_items):
+    _notification=''
+    index=0
+    for product in products:
+        if product.id == prices[index].product and prices[index].id == _line_items[index]['price']:
+            _notification+=f" {product.name} x {_line_items[index]['quantity']}   "
+            index+=1
+    return _notification
+
 import random
 import string
 

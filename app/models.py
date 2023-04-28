@@ -100,3 +100,10 @@ class Notificaton(Base):
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, 
     server_default=text('now()'))
 
+class New_notification_count(Base):
+    __tablename__ = "new_notification_count"
+    id = Column(Integer, primary_key=True, nullable=False)
+    _new_notification_count = Column(Integer, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, 
+    server_default=text('now()'))
+

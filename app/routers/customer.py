@@ -15,6 +15,7 @@ from pytz import timezone
 import stripe
 import os
 from ..config import settings
+from ..func import format_notification
 
 router = APIRouter(
     prefix="/customers",
@@ -78,6 +79,7 @@ async def create_stripe_customer(db: Session=Depends(get_db), current_customer: 
             metadata={"Total price": total_order_item_price}
         )
 
+
         checkout_session= stripe.checkout.Session.create(
             line_items=line_items,
             mode='payment',
@@ -88,6 +90,8 @@ async def create_stripe_customer(db: Session=Depends(get_db), current_customer: 
             # success_url=f"{LOCAL_CLIENT}/success",
             # cancel_url=f"{LOCAL_CLIENT}/failed"
         )
+        global notification_ 
+        notification_ = format_notification(stripe_product, stripe_price, line_items)
         global cs 
         cs = checkout_session.id
         return checkout_session.url
@@ -148,7 +152,10 @@ def verify_payment_status(db: Session=Depends(get_db), current_customer: int=Dep
     if str(current_customer.id) == str(retrieved_checkout_session.metadata.customer_id):
         if retrieved_checkout_session.status == "complete" and retrieved_checkout_session.payment_status == "paid":
             orders_query.update({"status": "PAID"}, synchronize_session=False)
+            new_notification= models.Notificaton(_notification=f"Successful payment of ${retrieved_checkout_session.amount_total/100} from customer with id#{current_customer.id}: {notification_}")
+            db.add(new_notification)
             db.commit()
+            db.refresh(new_notification)
         elif retrieved_checkout_session.status == "complete" and retrieved_checkout_session.payment_status == "unpaid":
             orders_query.update({"status": "PROCCESSING"}, synchronize_session=False)
             db.commit()
