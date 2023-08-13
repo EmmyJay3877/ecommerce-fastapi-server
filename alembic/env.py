@@ -24,7 +24,8 @@ DATABASE_NAME = os.environ.get("DATABASE_NAME")
 # access to the values within the .ini file in use.
 config = context.config
 # config.set_main_option('sqlalchemy.url', f'postgresql+psycopg2://postgres:boluwatife@localhost:5432/fastapi_test')
-config.set_main_option('sqlalchemy.url', f'postgresql+psycopg2://{DATABASE_USERNAME}:{DATABASE_PASSWORD}@{DATABASE_HOSTNAME}:{DATABASE_PORT}/{DATABASE_NAME}')
+config.set_main_option(
+    'sqlalchemy.url', f'postgresql+psycopg2://{DATABASE_USERNAME}:{DATABASE_PASSWORD}@{DATABASE_HOSTNAME}:{DATABASE_PORT}/{DATABASE_NAME}')
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
