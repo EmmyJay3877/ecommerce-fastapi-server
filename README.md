@@ -4,7 +4,7 @@
 Welcome to the Ecommerce API Server repository! This project provides a comprehensive API server for an ecommerce platform built using FastAPI and PostgreSQL. With this API server, you can manage products, customers, orders, and more. This README will guide you through setting up and running the API server.
 
 
-## Features
+## 🧐 Features
 
 - Create, retrieve, update and delete products (only by admin)
 - Manage customer information
@@ -22,6 +22,7 @@ Before you begin, ensure you have the following dependencies installed:
 
 - Python (>= 3.6)
 - PostgreSQL database
+
 ## Tech Stack
 
 **Server:** FastApi
