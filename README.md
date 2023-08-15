@@ -45,7 +45,7 @@ Before you begin, ensure you have the following dependencies installed:
 Clone the repository
 
 ```bash
-git clone https://github.com/EmmyJay3877/ecommerce-fastapi-server
+git clone https://github.com/EmmyJay3877/ecommerce-fastapi-server.git
 ```
     
 Create a virtual environment
