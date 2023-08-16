@@ -4,6 +4,10 @@
 Welcome to the Ecommerce API Server repository! This project provides a comprehensive API server for an ecommerce platform built using FastAPI and PostgreSQL. With this API server, you can manage products, customers, orders, and more. This README will guide you through setting up and running the API server.
 
 
+## 🚀 Demo
+Swagger UI documentation for the api 👉🏼 https://ecommerce-fastapi-server.onrender.com/docs
+
+
 ## 🧐 Features
 
 - Create, retrieve, update and delete products (only by admin)
@@ -140,8 +144,6 @@ uvicorn app.main:app --reload
 The API server will be accessible at http://localhost:8000
 
 
-
-
 ## Documentation
 
 The API documentation is automatically generated using Swagger UI. You can access it at http://localhost:8000/docs after starting the server. It provides a user-friendly interface to explore and test the various API endpoints.
@@ -152,9 +154,3 @@ The API documentation is automatically generated using Swagger UI. You can acces
 Contributions are always welcome!
 
 If you find any bugs or want to add new features, feel free to submit a pull request.
-
-
-## License
-
-[MIT](https://choosealicense.com/licenses/mit/)
-
