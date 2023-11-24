@@ -18,8 +18,11 @@ class Settings(BaseSettings):
     stripe_secret_key: str
     redis_host: str
     redis_port: str
-    python_env: str
+    redis_username: str
+    redis_password: str
     local_client: str
+    server: str
+    client: str
 
     class Config:
         env_file = ".env"

@@ -13,7 +13,6 @@ import asyncio
 from datetime import datetime, timedelta
 from pytz import timezone
 import stripe
-import os
 from ..config import settings
 from ..func import format_notification
 import json
@@ -25,25 +24,18 @@ router = APIRouter(
     tags=['Customers']
 )
 
-PYTHON_ENV = settings.python_env
-
-if PYTHON_ENV == 'development':
-    redis_host = settings.redis_host
-    redis_port = settings.redis_port
-    redis_client = redis.Redis(host=redis_host, port=redis_port)
-else:
-    redis_host = os.environ.get("REDIS_HOST")
-    redis_port = os.environ.get("REDIS_PORT")
-    redis_username = os.environ.get("REDIS_USERNAME")
-    redis_password = os.environ.get("REDIS_PASSWORD")
-    redis_client = redis.Redis(host=redis_host,
-                               username=redis_username,
-                               password=redis_password,
-                               port=redis_port,
-                               ssl=True
-                               )
-    STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY")
-    CLIENT = os.environ.get("CLIENT")
+redis_host = settings.redis_host
+redis_port = settings.redis_port
+redis_username = settings.redis_username
+redis_password = settings.redis_password
+redis_client = redis.Redis(host=redis_host,
+                           username=redis_username,
+                           password=redis_password,
+                           port=redis_port,
+                           ssl=True
+                           )
+STRIPE_SECRET_KEY = settings.stripe_secret_key
+CLIENT = settings.client
 
 # create new stripe checkout and stripe customer_id
 
