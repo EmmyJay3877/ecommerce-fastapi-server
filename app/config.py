@@ -3,11 +3,11 @@ from pydantic import BaseSettings
 
 # validation for our environment variables
 class Settings(BaseSettings):
-    dev_database_hostname: str
-    dev_database_port: str
-    dev_database_password: str
-    dev_database_name: str
-    dev_database_username: str
+    database_hostname: str
+    database_port: str
+    database_password: str
+    database_name: str
+    database_username: str
     secret_key: str
     algorithm: str
     access_token_expire_minutes: int
@@ -16,8 +16,8 @@ class Settings(BaseSettings):
     api_secret: str
     secure: bool
     stripe_secret_key: str
-    dev_redis_host: str
-    dev_redis_port: str
+    redis_host: str
+    redis_port: str
     python_env: str
     local_client: str
 

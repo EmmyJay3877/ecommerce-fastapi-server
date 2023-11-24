@@ -11,11 +11,11 @@ import os
 PYTHON_ENV = settings.python_env
 
 if PYTHON_ENV == 'development':
-    DATABASE_USERNAME = settings.dev_database_username
-    DATABASE_PASSWORD = settings.dev_database_password
-    DATABASE_HOSTNAME = settings.dev_database_hostname
-    DATABASE_PORT = settings.dev_database_port
-    DATABASE_NAME = settings.dev_database_name
+    DATABASE_USERNAME = settings.database_username
+    DATABASE_PASSWORD = settings.database_password
+    DATABASE_HOSTNAME = settings.database_hostname
+    DATABASE_PORT = settings.database_port
+    DATABASE_NAME = settings.database_name
 else:
     DATABASE_USERNAME = os.environ.get("DATABASE_USERNAME")
     DATABASE_PASSWORD = os.environ.get("DATABASE_PASSWORD")

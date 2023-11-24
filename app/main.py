@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from . import models
 from .database import engine
 from .routers import item, customer, auth, order, admin
-from .config import settings
 from .routers.customer import start_background_tasks
 from fastapi_socketio import SocketManager
 from .routers.admin import update_noti_count

@@ -28,8 +28,8 @@ router = APIRouter(
 PYTHON_ENV = settings.python_env
 
 if PYTHON_ENV == 'development':
-    redis_host = settings.dev_redis_host
-    redis_port = settings.dev_redis_port
+    redis_host = settings.redis_host
+    redis_port = settings.redis_port
     redis_client = redis.Redis(host=redis_host, port=redis_port)
 else:
     redis_host = os.environ.get("REDIS_HOST")
