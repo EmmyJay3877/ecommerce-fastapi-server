@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from . import models
 from .database import engine
@@ -8,7 +8,6 @@ from .routers.customer import start_background_tasks
 from fastapi_socketio import SocketManager
 from .routers.admin import update_noti_count
 # import requests
-
 
 app = FastAPI()
 
@@ -30,20 +29,23 @@ app.include_router(admin.router)
 
 socket_manager = SocketManager(app=app, cors_allowed_origins=[])
 
+
 @app.get("/")
-def root():
-    return {"message": "Hello World"}
+def root(request: Request, response: Response):
+    return "Hello World"
 
 
 @socket_manager.on('connect')
 async def connect(sid, environ, *args):
     print(sid, 'connected')
 
+
 @socket_manager.on('send_notification')
 async def send_noti(sid):
 
     update_noti_count()
     await socket_manager.emit('receive_notification')
+
 
 @socket_manager.on('disconnect')
 async def disconnect(sid):

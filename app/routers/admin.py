@@ -7,11 +7,28 @@ from typing import List
 from datetime import datetime
 from jose import JWTError, jwt
 from ..func import convert_time
+import redis
+import json
+from ..config import settings
+from fastapi.encoders import jsonable_encoder
+import os
 
 router = APIRouter(
     prefix="/admin",  # / = /{id}
     tags=['Admin']  # group requests
 )
+
+PYTHON_ENV = settings.python_env
+
+if PYTHON_ENV == 'development':
+    redis_host = settings.dev_redis_host
+    redis_port = settings.dev_redis_port
+else:
+    redis_host = os.environ.get("REDIS_HOST")
+    redis_port = os.environ.get("REDIS_PORT")
+
+
+redis_client = redis.Redis(host=redis_host, port=redis_port, db=0)
 
 
 @router.get("/", status_code=status.HTTP_200_OK)
@@ -22,27 +39,23 @@ def admin_root(db: Session = Depends(get_db), current_admin: int = Depends(oauth
 
 def update_noti_count(db=None):
     if db is None:
-        print('yes')
         db = next(get_db())
         _notification_count_query = db.query(models.New_notification_count).filter(
             models.New_notification_count.id == 1)
         existing_notification_count_ = _notification_count_query.first()
         if existing_notification_count_ is None:
-            print('yes1')
             _new_noti = models.New_notification_count(
                 _new_notification_count=0)
             db.add(_new_noti)
             db.commit()
             db.refresh(_new_noti)
         else:
-            print('no')
             new_count = _notification_count_query.first()._new_notification_count
             new_count += 1
             _notification_count_query.update(
                 {"_new_notification_count": new_count}, synchronize_session=False)
             db.commit()
     if db is not None:
-        print('no2')
         db.close()
 
     db.close()
@@ -57,27 +70,29 @@ def reset_noti(db: Session = Depends(get_db), current_admin: int = Depends(oauth
     db.commit()
 
 
-# @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.Response)
-# def create_admin(admin: schemas.AdminCreate, db: Session= Depends(get_db)):
-#     hashed_password = utils.hash(admin.password)
-#     admin.password = hashed_password
-#     new_admin = models.Admin(**admin.dict())
-#     admin_query = db.query(models.Admin).filter((models.Admin.username==admin.username)|
-#     (models.Admin.email==admin.username))
-#     found_admin = admin_query.first()
-#     if found_admin:
-#         raise HTTPException(status_code=status.HTTP_409_CONFLICT,
-#             detail=f"Admin already exist.")
-#     db.add(new_admin)
-#     db.commit()
-#     db.refresh(new_admin)
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.Response)
+def create_admin(admin: schemas.AdminCreate, db: Session = Depends(get_db)):
+    hashed_password = utils.hash(admin.password)
+    admin.password = hashed_password
+    new_admin = models.Admin(**admin.dict())
+    admin_query = db.query(models.Admin).filter((models.Admin.username == admin.username) |
+                                                (models.Admin.email == admin.username))
+    found_admin = admin_query.first()
+    if found_admin:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                            detail=f"Admin already exist.")
+    db.add(new_admin)
+    db.commit()
+    db.refresh(new_admin)
 
-#     return {
-#         "status": "Registration successfull",
-#         "data": "Admin has be created"
-#     }
+    return {
+        "status": "Registration successfull",
+        "data": "Admin has be created"
+    }
 
 # verify admin token
+
+
 @router.get('/check-token', status_code=status.HTTP_200_OK)
 def verify_token(token: str = Depends(oauth2.oauth2_scheme)):
     try:
@@ -92,6 +107,11 @@ def verify_token(token: str = Depends(oauth2.oauth2_scheme)):
 
 @router.get('/notification', status_code=status.HTTP_200_OK)
 def get_notification(db: Session = Depends(get_db), current_admin: int = Depends(oauth2.get_current_user)):
+    cached_notification = redis_client.get(
+        f'notifications?=id{current_admin.id}')
+    if cached_notification != None:
+        return json.loads(cached_notification)
+
     notifications = db.query(models.Notificaton).all()
     if not notifications:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -103,13 +123,20 @@ def get_notification(db: Session = Depends(get_db), current_admin: int = Depends
         _notifications.append(
             {"_notification": notification._notification, "created_at": formatted_time})
 
+    redis_client.setex(f'notifications?=id{current_admin.id}', 30, json.dumps(
+        jsonable_encoder(_notifications)))
+
     return _notifications
 
 # getting all customer orders
 
 
 @router.get("/orders")
-def get_orders(db: Session = Depends(get_db), current_admin: int = Depends(oauth2.get_current_user)):
+def get_all_orders(db: Session = Depends(get_db), current_admin: int = Depends(oauth2.get_current_user)):
+    cached_orders = redis_client.get('all_orders')
+    if cached_orders != None:
+        return json.loads(cached_orders)
+
     orders = db.query(models.Order).all()
 
     if not orders:
@@ -136,6 +163,9 @@ def get_orders(db: Session = Depends(get_db), current_admin: int = Depends(oauth
     if full_orders == []:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"There are no orders")
+
+    redis_client.setex('all_orders', 30, json.dumps(
+        jsonable_encoder(full_orders)))
 
     return full_orders
 
@@ -173,7 +203,7 @@ def check_email(email: schemas.EmailCheck, db: Session = Depends(get_db)):
 
 
 @router.put("/update_password", response_model=schemas.Response)
-def update_customerPswrd(password: schemas.PasswordEdit, db: Session = Depends(get_db), current_admin: int = Depends(oauth2.get_current_user)):
+def update_adminPswrd(password: schemas.PasswordEdit, db: Session = Depends(get_db), current_admin: int = Depends(oauth2.get_current_user)):
 
     admin_query = db.query(models.Admin).filter(
         models.Admin.id == current_admin.id)
@@ -181,7 +211,7 @@ def update_customerPswrd(password: schemas.PasswordEdit, db: Session = Depends(g
 
     if not admin:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"Customer was not found.")
+                            detail=f"Admin was not found.")
 
     if password.password == '':
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)

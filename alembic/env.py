@@ -8,17 +8,20 @@ from app.models import Base
 from app.config import settings
 import os
 
-DATABASE_USERNAME = os.environ.get("DATABASE_USERNAME")
-DATABASE_PASSWORD = os.environ.get("DATABASE_PASSWORD")
-DATABASE_HOSTNAME = os.environ.get("DATABASE_HOSTNAME")
-DATABASE_PORT = os.environ.get("DATABASE_PORT")
-DATABASE_NAME = os.environ.get("DATABASE_NAME")
+PYTHON_ENV = settings.python_env
 
-# DATABASE_USERNAME = settings.database_username
-# DATABASE_PASSWORD = settings.database_password
-# DATABASE_HOSTNAME = settings.database_hostname
-# DATABASE_PORT = settings.database_port
-# DATABASE_NAME = settings.database_name
+if PYTHON_ENV == 'development':
+    DATABASE_USERNAME = settings.dev_database_username
+    DATABASE_PASSWORD = settings.dev_database_password
+    DATABASE_HOSTNAME = settings.dev_database_hostname
+    DATABASE_PORT = settings.dev_database_port
+    DATABASE_NAME = settings.dev_database_name
+else:
+    DATABASE_USERNAME = os.environ.get("DATABASE_USERNAME")
+    DATABASE_PASSWORD = os.environ.get("DATABASE_PASSWORD")
+    DATABASE_HOSTNAME = os.environ.get("DATABASE_HOSTNAME")
+    DATABASE_PORT = os.environ.get("DATABASE_PORT")
+    DATABASE_NAME = os.environ.get("DATABASE_NAME")
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
