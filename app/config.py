@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     dev_redis_host: str
     dev_redis_port: str
     python_env: str
-    # local_client: str
+    local_client: str
 
     class Config:
         env_file = ".env"
