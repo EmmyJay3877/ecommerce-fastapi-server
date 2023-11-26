@@ -24,16 +24,22 @@ router = APIRouter(
     tags=['Customers']
 )
 
+python_env = settings.python_env
+
 redis_host = settings.redis_host
 redis_port = settings.redis_port
 redis_username = settings.redis_username
 redis_password = settings.redis_password
-redis_client = redis.Redis(host=redis_host,
-                           username=redis_username,
-                           password=redis_password,
-                           port=redis_port,
-                           ssl=True
-                           )
+
+if python_env == "development":
+    redis_client = redis.Redis(host=redis_host, port=redis_port)
+else:
+    redis_client = redis.Redis(host=redis_host,
+                               username=redis_username,
+                               password=redis_password,
+                               port=redis_port,
+                               ssl=True
+                               )
 STRIPE_SECRET_KEY = settings.stripe_secret_key
 CLIENT = settings.client
 

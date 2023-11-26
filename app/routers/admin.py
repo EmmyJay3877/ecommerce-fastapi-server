@@ -17,16 +17,22 @@ router = APIRouter(
     tags=['Admin']  # group requests
 )
 
+python_env = settings.python_env
+
 redis_host = settings.redis_host
 redis_port = settings.redis_port
 redis_username = settings.redis_username
 redis_password = settings.redis_password
-redis_client = redis.Redis(host=redis_host,
-                           username=redis_username,
-                           password=redis_password,
-                           port=redis_port,
-                           ssl=True
-                           )
+
+if python_env == "development":
+    redis_client = redis.Redis(host=redis_host, port=redis_port)
+else:
+    redis_client = redis.Redis(host=redis_host,
+                               username=redis_username,
+                               password=redis_password,
+                               port=redis_port,
+                               ssl=True
+                               )
 
 
 @router.get("/", status_code=status.HTTP_200_OK)

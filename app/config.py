@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     local_client: str
     server: str
     client: str
+    python_env: str
 
     class Config:
         env_file = ".env"

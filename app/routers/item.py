@@ -15,16 +15,22 @@ from fastapi.encoders import jsonable_encoder
 
 router = APIRouter(prefix="/items", tags=['Items'])
 
+python_env = settings.python_env
+
 redis_host = settings.redis_host
 redis_port = settings.redis_port
 redis_username = settings.redis_username
 redis_password = settings.redis_password
-redis_client = redis.Redis(host=redis_host,
-                           username=redis_username,
-                           password=redis_password,
-                           port=redis_port,
-                           ssl=True
-                           )
+
+if python_env == "development":
+    redis_client = redis.Redis(host=redis_host, port=redis_port)
+else:
+    redis_client = redis.Redis(host=redis_host,
+                               username=redis_username,
+                               password=redis_password,
+                               port=redis_port,
+                               ssl=True
+                               )
 
 CLOUD_NAME = settings.cloud_name
 API_KEY = settings.api_key
@@ -71,7 +77,15 @@ def create_item(item: schemas.ItemCreate, db: Session = Depends(get_db), current
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"Not authorized to perform this action")
 
-    # item = schemas.ItemCreate(name=name, description=description, price=price, image=img_url)
+    # print(item.name)
+
+    item_query = db.query(models.Item).filter(models.Item.name == item.name)
+    invalid_item = item_query.first()
+
+    if invalid_item and invalid_item.image == None:
+        item_query.delete(synchronize_session=False)
+        db.commit()
+
     new_item = models.Item(admin_id=current_admin.id, **item.dict())
     db.add(new_item)
     db.commit()
